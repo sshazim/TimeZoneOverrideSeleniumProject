@@ -2,6 +2,7 @@
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.DevTools;
 using NUnit.Framework;
+using OpenQA.Selenium.DevTools.V122.Emulation;
 
 namespace SeleniumTests
 {
@@ -35,11 +36,6 @@ namespace SeleniumTests
         [TestCase("Asia/Tokyo", 35.6895, 139.6917)] // Test case for Tokyo (Example)
         public void TestEmulatedLocationAndTimezone(string timezoneId, double latitude, double longitude)
         {
-            // Replace these values with your desired timezone and coordinates
-            /*string timezoneId = "America/Los_Angeles";
-            double latitude = 34.0522;
-            double longitude = -118.2437;*/
-
             // Initialize Chrome driver options
             var options = new ChromeOptions();
 
@@ -48,19 +44,23 @@ namespace SeleniumTests
 
             // Create a new Chrome session
             using var driver = new ChromeDriver(options);
+
             // Create DevTools session
-            var devTools = driver.GetDevToolsSession();
+            DevToolsSession devTools = driver.GetDevToolsSession();
+            options.AddArgument("--disable-geolocation");
 
             // Enable necessary DevTools domains
             //devTools.SendCommand(new OpenQA.Selenium.DevTools.V122.Emulation.SetGeolocationOverrideCommandSettings());
             //devTools.SendCommand(new OpenQA.Selenium.DevTools.V122.Network);
 
-            // Set geolocation override
-            devTools.SendCommand(new OpenQA.Selenium.DevTools.V122.Emulation.SetGeolocationOverrideCommandSettings
+            var emulationSettings = new SetGeolocationOverrideCommandSettings
             {
                 Latitude = latitude,
-                Longitude = longitude
-            });
+                Longitude = longitude,
+                Accuracy = 100
+            };
+
+            devTools.SendCommand(emulationSettings);
 
             // Set timezone override
             devTools.SendCommand(new OpenQA.Selenium.DevTools.V122.Emulation.SetTimezoneOverrideCommandSettings
@@ -71,11 +71,7 @@ namespace SeleniumTests
             // Navigate to your desired website
             driver.Navigate().GoToUrl("https://www.whatismytimezone.com/");
 
-            // Perform your test case actions here...
-
-            // Remember to disable DevTools domains after use
-            /*devTools.SendCommand(OpenQA.Selenium.DevTools.V122.Emulation.disable);
-            devTools.SendCommand(ChromeDevTools.Network.DisableCommand);*/
+            driver.Navigate().GoToUrl("https://mylocation.org/");
         }
 
         [Test]
@@ -89,18 +85,80 @@ namespace SeleniumTests
             // Create a DevTools session
             var devTools = ((ChromeDriver)driver).GetDevToolsSession();
 
-
             // Set the desired timezone (e.g., "America/New_York")
             var timezoneParams = new Dictionary<string, object> { { "timezoneId", timezoneId } };
             devTools.SendCommand(new OpenQA.Selenium.DevTools.V122.Emulation.SetTimezoneOverrideCommandSettings
             {
                 TimezoneId = timezoneId
             });
+
             // Now your ChromeDriver instance will behave as if it's in the specified timezone
             // You can proceed with your tests
             // Navigate to your desired website
             driver.Navigate().GoToUrl("https://www.whatismytimezone.com/");
+        }
 
+        [Test]
+        [TestCase(41.902783, 12.483333)] // Test case for Italy
+        [TestCase(34.0522, -118.2437)] // Test case for Los Angeles
+        [TestCase(35.6895, 139.6917)] // Test case for Tokyo (Example)
+        public void TestMethod2(double latitude, double longitude)
+        {
+            // Set ChromeOptions
+            ChromeOptions options = new ChromeOptions();
+
+            // Disable built-in geolocation
+            options.AddArgument("--disable-geolocation"); 
+
+            // Initialize ChromeDriver object
+            ChromeDriver driver = new ChromeDriver(options);
+
+            // Create a DevTools session
+            IDevTools devToolsDriver = driver as IDevTools;
+            DevToolsSession session = devToolsDriver.GetDevToolsSession();
+            
+            // Set Geolocation values
+            var geoLocationOverrideCommandSettings = new SetGeolocationOverrideCommandSettings();
+            geoLocationOverrideCommandSettings.Latitude = latitude;
+            geoLocationOverrideCommandSettings.Longitude = longitude;
+            geoLocationOverrideCommandSettings.Accuracy = 100;
+
+            // Override the GeoLocation value for the current session
+            session
+                .GetVersionSpecificDomains<OpenQA.Selenium.DevTools.V122.DevToolsSessionDomains>()
+                .Emulation
+                .SetGeolocationOverride(geoLocationOverrideCommandSettings);
+
+            driver.Url = "https://my-location.org/";
+
+            // Your test logic here
+        }
+
+        [Test]
+        public static async Task GeoLocation()
+        {
+            // Set ChromeOptions
+            ChromeOptions chromeOptions = new ChromeOptions();
+
+            // Initialize ChromeDriver object
+            var driver = new ChromeDriver(chromeOptions);
+
+            // Create a DevTools session
+            DevToolsSession devToolsSession = driver.GetDevToolsSession();
+
+            // Set Geolocation values
+            var geoLocationOverrideCommandSettings = new SetGeolocationOverrideCommandSettings();
+            geoLocationOverrideCommandSettings.Latitude = 51.507351;
+            geoLocationOverrideCommandSettings.Longitude = -0.127758;
+            geoLocationOverrideCommandSettings.Accuracy = 1;
+
+            // Override the GeoLocation value for the current session
+            await devToolsSession
+              .GetVersionSpecificDomains<OpenQA.Selenium.DevTools.V122.DevToolsSessionDomains>()
+              .Emulation
+              .SetGeolocationOverride(geoLocationOverrideCommandSettings);
+
+            driver.Url = "https://my-location.org/";
         }
     }
 }

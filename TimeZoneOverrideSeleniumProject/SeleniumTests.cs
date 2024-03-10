@@ -3,6 +3,7 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.DevTools;
 using NUnit.Framework;
 using OpenQA.Selenium.DevTools.V122.Emulation;
+using OpenQA.Selenium.Interactions;
 
 namespace SeleniumTests
 {
@@ -108,7 +109,7 @@ namespace SeleniumTests
             ChromeOptions options = new ChromeOptions();
 
             // Disable built-in geolocation
-            options.AddArgument("--disable-geolocation"); 
+            options.AddArgument("--disable-geolocation");
 
             // Initialize ChromeDriver object
             ChromeDriver driver = new ChromeDriver(options);
@@ -116,7 +117,7 @@ namespace SeleniumTests
             // Create a DevTools session
             IDevTools devToolsDriver = driver as IDevTools;
             DevToolsSession session = devToolsDriver.GetDevToolsSession();
-            
+
             // Set Geolocation values
             var geoLocationOverrideCommandSettings = new SetGeolocationOverrideCommandSettings();
             geoLocationOverrideCommandSettings.Latitude = latitude;
@@ -129,7 +130,16 @@ namespace SeleniumTests
                 .Emulation
                 .SetGeolocationOverride(geoLocationOverrideCommandSettings);
 
+            var geolocation = new Dictionary<string, object>();
+            geolocation.Add("latitude", latitude);
+            geolocation.Add("longitude", longitude);
+            geolocation.Add("accuracy", 100);
+
+            //driver.ExecuteCdpCommand("Emulation.setGeolocationOverride", geolocation);
+
             driver.Url = "https://my-location.org/";
+
+            driver.Url = "https://ifconfig.co/";
 
             // Your test logic here
         }
@@ -143,8 +153,14 @@ namespace SeleniumTests
             // Initialize ChromeDriver object
             var driver = new ChromeDriver(chromeOptions);
 
+            // Disable built-in geolocation
+            chromeOptions.AddArgument("--disable-geolocation");
+
             // Create a DevTools session
             DevToolsSession devToolsSession = driver.GetDevToolsSession();
+
+            await devToolsSession.GetVersionSpecificDomains<OpenQA.Selenium.DevTools.V122.DevToolsSessionDomains>()
+              .Emulation.SetSensorOverrideEnabled(new OpenQA.Selenium.DevTools.V122.Emulation.SetSensorOverrideEnabledCommandSettings() { Enabled = true });
 
             // Set Geolocation values
             var geoLocationOverrideCommandSettings = new SetGeolocationOverrideCommandSettings();

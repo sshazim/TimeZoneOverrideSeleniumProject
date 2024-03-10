@@ -145,19 +145,19 @@ namespace SeleniumTests
         }
 
         [Test]
-        public static async Task GeoLocation()
+        public async Task GeoLocation()
         {
             // Set ChromeOptions
             ChromeOptions chromeOptions = new ChromeOptions();
 
             // Initialize ChromeDriver object
-            var driver = new ChromeDriver(chromeOptions);
+            driver = new ChromeDriver(chromeOptions);
 
             // Disable built-in geolocation
             chromeOptions.AddArgument("--disable-geolocation");
 
             // Create a DevTools session
-            DevToolsSession devToolsSession = driver.GetDevToolsSession();
+            DevToolsSession devToolsSession = ((ChromeDriver)driver).GetDevToolsSession();
 
             await devToolsSession.GetVersionSpecificDomains<OpenQA.Selenium.DevTools.V122.DevToolsSessionDomains>()
               .Emulation.SetSensorOverrideEnabled(new OpenQA.Selenium.DevTools.V122.Emulation.SetSensorOverrideEnabledCommandSettings() { Enabled = true });
@@ -175,6 +175,43 @@ namespace SeleniumTests
               .SetGeolocationOverride(geoLocationOverrideCommandSettings);
 
             driver.Url = "https://my-location.org/";
+
+            driver.Url = "https://locations.kfc.com/search";
+            await Task.Delay(3000);
+            driver.FindElement(By.CssSelector(".Locator-button.js-locator-geolocateTrigger")).Click();
+        }
+
+        [Test]
+        public void TestGeoLocation()
+        {
+            // Initialize ChromeOptions
+            var chromeOptions = new ChromeOptions();
+            chromeOptions.AddArgument("--disable-geolocation");
+            driver = new ChromeDriver(chromeOptions);
+            // Override geolocation using the async function
+            _ = OverrideGeolocation();
+
+            // Perform test actions without async context
+            driver.Url = "https://my-location.org/";
+            driver.Url = "https://locations.kfc.com/search";
+            driver.FindElement(By.CssSelector(".Locator-button.js-locator-geolocateTrigger")).Click();
+            // ... (rest of your test logic)
+        }
+
+        private async Task OverrideGeolocation()
+        {
+            var devToolsSession = ((ChromeDriver)driver).GetDevToolsSession();
+
+            await devToolsSession.GetVersionSpecificDomains<OpenQA.Selenium.DevTools.V122.DevToolsSessionDomains>()
+                .Emulation.SetSensorOverrideEnabled(new OpenQA.Selenium.DevTools.V122.Emulation.SetSensorOverrideEnabledCommandSettings() { Enabled = true });
+
+            var geoLocationOverrideCommandSettings = new SetGeolocationOverrideCommandSettings();
+            geoLocationOverrideCommandSettings.Latitude = 51.507351;
+            geoLocationOverrideCommandSettings.Longitude = -0.127758;
+            geoLocationOverrideCommandSettings.Accuracy = 1;
+
+            await devToolsSession.GetVersionSpecificDomains<OpenQA.Selenium.DevTools.V122.DevToolsSessionDomains>()
+                .Emulation.SetGeolocationOverride(geoLocationOverrideCommandSettings);
         }
     }
 }
